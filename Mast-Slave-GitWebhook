@@ -1,0 +1,138 @@
+sec group 22,8080 or all traffic
+On ubuntu username is ubuntu
+/home/ubuntu
+sudo apt update -y
+sudo apt install openjdk-8-jdk -y
+wget -q -O - https://pkg.jenkins.io/debian-stable/jenkins.io.key | sudo apt-key add -
+sudo sh -c 'echo deb https://pkg.jenkins.io/debian-stable binary/ > \
+    /etc/apt/sources.list.d/jenkins.list'
+sudo apt-get update
+sudo apt-get install jenkins -y
+
+
+
+systemctl status jenkins
+systemctl start jenkins
+systemctl enable jenkins
+
+##// First install jenkins
+sudo su
+passwd jenkins 
+##//
+
+name jenkins-master then pub-ip:8080 for passwd - cat/var/lib/jenkins/secrets/AdminInitialPassword on aws dashboard select jenkins-master actios launch more like this 2
+slave-1
+slave-2
+
+On jenkins Dashbord- configure global security
+Agents 
+Tcp port for jnlp agent choose Random
+save
+
+manage nodes
+new node
+Node Name slave-1
+ok
+launch method launch agent via java webstart
+custom work dir path /home/ubuntu/jenkins
+
+same for slave-2
+
+go on jenkins dash on slave-1
+here Run from agent cmd line -- cmd is given
+first click on agent.jar to downlaod agent.jar file for slave-1 then copy to
+scp path/of/agent.jar/downlaoded ubuntu@pub-ip:/home/ubuntu/jenkins
+
+same do for slave-2
+
+then
+got ot slave-1 & slave-2 xminal install java is needed to run agent.jar
+sudo apt update -y
+sudo apt install openjdk-8-jdk
+then run java jar full cmd given on slave-1 for slave-1 node
+then run java jar full cmd given on slave-2 for slave-2 node
+
+Now create new item Test
+Github project
+put url hshar/devopsIQ
+git
+put same url
+
+Restrict Project Can be run on
+label - slave-1
+
+save & build now to just chk git clone on slave-1 or not & chk it on slave-1 terminal
+
+then
+again configure Test
+Add Build step
+Execute command shell 
+                      sudo docker rm -f $(sudo docker ps -a -q) use if already any container running on slave-1 this will remove
+                      sudo docker build /home/ubuntu/workspace/Test -t test
+		      sudo docker run -it -p 82:80 -d test
+
+		      now chk slave-1-ip:82
+		      		      now chk slave-1-ip:82/devopsIQ
+
+Now create again jon name Prod
+everything same as Test job
+
+Execute command shell 
+                      sudo docker rm -f $(sudo docker ps -a -q) use if already any container running on slave-1 this will remove
+                      sudo docker build /home/ubuntu/workspace/Prod -t production
+		      sudo docker run -it -p 82:80 -d test
+
+		      now chk slave-1-ip:80
+		      		      now chk slave-1-ip:80/devopsIQ
+
+Now we want if Test build success then only run Prod job so
+
+configure Test
+Add Post Build step
+Build Other project 
+Project to build Prod,
+             trigger only if build is stable
+
+save
+
+Now on jenkins dashboard
+you see two projcet 
+Test 
+Prod
+now click on + to set build pipeline view if not showing option Build pipeline view then first install build pipeline plugin
+& restart
+
+Now again click on + View Name CI/CD
+choose Build Pipeline View
+
+ok
+Build Pipeline View Name- CI/CD
+select initial job- Test
+ok save
+Now Buld job Test you see build pipeline
+
+Now we want if we do any changes commt any changes in github Build should trigger Automatically for that do
+
+Configure Test
+Build Trigger
+choose Github hook trigger for gitscm polling
+
+goto github-setting-webhook-addwebhook
+put in playload url- jenkins-url eg http://jenkins-master-ip:8080/github-webhook
+add webhook
+if you get ✓ then its successfully added git to jenkins
+
+
+then go on master xminal 
+clone hshar/devopsIQ
+cd devopsIQ
+vim index.html
+change title
+
+git add .
+git commit -m "index file changed"
+git push origin master
+
+Now chk slave-1:82  slave-2:80
+Now chk slave-1:82/devopsIQ  slave-2:80/devopsIQ
+                 
